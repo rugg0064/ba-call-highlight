@@ -6,7 +6,7 @@ import net.runelite.client.config.ConfigItem;
 
 import java.awt.*;
 
-@ConfigGroup("main")
+@ConfigGroup("bacallhighlight")
 public interface baCallHighlightConfig extends Config
 {
 
