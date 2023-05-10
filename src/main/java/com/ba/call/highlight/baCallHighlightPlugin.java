@@ -5,6 +5,7 @@ import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.widgets.Widget;
@@ -13,6 +14,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.util.ColorUtil;
+import net.runelite.client.util.Text;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -71,17 +73,20 @@ public class baCallHighlightPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	public void onClientTick(ClientTick clientTick)
 	{
+		MenuEntry[] entries = client.getMenuEntries();
 		for(Role role : Role.values())
 		{
 			Widget activeWidget = client.getWidget(role.groupID, role.childID);
 			if(activeWidget != null)
 			{
-				MenuEntry entry = event.getMenuEntry();
-				if(entry.getOption().equals(callToMenuEntry.get(activeWidget.getText())))
-				{
-					entry.setOption(ColorUtil.prependColorTag(entry.getOption(), config.highlightCallColor()));
+				for(MenuEntry entry : entries) {
+					if(Text.removeTags(entry.getOption()).equals(callToMenuEntry.get(activeWidget.getText()))) {
+						entry.setOption(ColorUtil.prependColorTag(Text.removeTags(entry.getOption()), config.highlightCallColor()));
+					} else {
+						entry.setOption(Text.removeTags(entry.getOption()));
+					}
 				}
 				return;
 			}
