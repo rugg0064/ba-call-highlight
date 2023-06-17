@@ -6,8 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.events.ClientTick;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -31,6 +30,9 @@ public class baCallHighlightPlugin extends Plugin
 	@Inject private baCallHighlightConfig config;
 
 	private final Map<String, String> callToMenuEntry = new HashMap<>();
+
+	private Role role;
+
 	private enum Role
 	{
 		COLLECTOR(486, 9),
@@ -73,22 +75,51 @@ public class baCallHighlightPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		final int groupId = event.getGroupId();
+
+		if (groupId == Role.COLLECTOR.groupID)
+		{
+			role = Role.COLLECTOR;
+		}
+		else if (groupId == Role.HEALER.groupID)
+		{
+			role = Role.HEALER;
+		}
+		else if (groupId == Role.ATTACKER.groupID)
+		{
+			role = Role.ATTACKER;
+		}
+		else if (groupId == Role.DEFENDER.groupID)
+		{
+			role = Role.DEFENDER;
+		}
+	}
+
+	@Subscribe
 	public void onClientTick(ClientTick clientTick)
 	{
-		MenuEntry[] entries = client.getMenuEntries();
-		for(Role role : Role.values())
+		if (role == null)
 		{
-			Widget activeWidget = client.getWidget(role.groupID, role.childID);
-			if(activeWidget != null)
+			return;
+		}
+
+		Widget activeWidget = client.getWidget(role.groupID, role.childID);
+		if (activeWidget == null)
+		{
+			return;
+		}
+
+		for (MenuEntry entry : client.getMenuEntries())
+		{
+			if (Text.removeTags(entry.getOption()).equals(callToMenuEntry.get(activeWidget.getText())))
 			{
-				for(MenuEntry entry : entries) {
-					if(Text.removeTags(entry.getOption()).equals(callToMenuEntry.get(activeWidget.getText()))) {
-						entry.setOption(ColorUtil.prependColorTag(Text.removeTags(entry.getOption()), config.highlightCallColor()));
-					} else {
-						entry.setOption(Text.removeTags(entry.getOption()));
-					}
-				}
-				return;
+				entry.setOption(ColorUtil.prependColorTag(Text.removeTags(entry.getOption()), config.highlightCallColor()));
+			}
+			else
+			{
+				entry.setOption(Text.removeTags(entry.getOption()));
 			}
 		}
 	}
